@@ -1,56 +1,15 @@
 FROM golang:1.16 as srpmproc
-ARG srpmproc_version=v0.3.9
-ENV srpmproc_version=$srpmproc_version
+ARG srpmproc_version=v0.1.1
 RUN git clone https://github.com/rocky-linux/srpmproc /go/src/github.com/rocky-linux/srpmproc/
 WORKDIR /go/src/github.com/rocky-linux/srpmproc/
 RUN git checkout $srpmproc_version
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o srpmproc ./cmd/srpmproc 
 
-FROM docker.io/neilresf/scratch:minimal as dnf
-RUN microdnf -y upgrade
+FROM rockylinux:8 as dnf
+RUN dnf -y upgrade
 RUN sed -i 's/enabled=0/enabled=1/g' /etc/yum.repos.d/Rocky-PowerTools.repo
-RUN microdnf -y install epel-release
-RUN microdnf -y install rpm-build mock createrepo git-core \
-   autoconf \
-   automake \
-   binutils \
-   bison \
-   flex \
-   gcc \
-   gcc-c++ \
-   gdb \
-   glibc-devel \
-   libtool \
-   make \
-   pkgconf \
-   pkgconf-m4 \
-   pkgconf-pkg-config \
-   redhat-rpm-config \
-   rpm-build \
-   rpm-sign \
-   strace \
-   asciidoc \
-   byacc \
-   ctags \
-   diffstat \
-   elfutils-libelf-devel \
-   git \
-   intltool \
-   jna \
-   ltrace \
-   patchutils \
-   perl-Fedora-VSP \
-   perl-Sys-Syslog \
-   perl-generators \
-   pesign \
-   source-highlight \
-   systemtap \
-   valgrind \
-   valgrind-devel \
-   cmake \
-   expect \
-   rpmdevtools \
-   rpmlint
+RUN dnf -y install epel-release
+RUN dnf -y install rpm-build mock @"Development Tools" createrepo git-core
 
 
 FROM dnf as devtools
@@ -70,11 +29,11 @@ RUN chmod +x /entrypoint.sh
 FROM base as prep
 ARG PACKAGE
 ENV PACKAGE=$PACKAGE
-ARG BRANCH
-ENV BRANCH=$BRANCH
+ARG branch=r8
+ENV BRANCH=$branch
 
 #RUN env
-#RUN /entrypoint.sh get
+RUN /entrypoint.sh get
 
 
 FROM prep
